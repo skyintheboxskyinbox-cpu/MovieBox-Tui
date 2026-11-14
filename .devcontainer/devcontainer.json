@@ -1,0 +1,3 @@
+{
+  "postStartCommand": "bash ~/moviebox-watch/start.sh >> ~/moviebox-watch/autostart.log 2>&1"
+}
