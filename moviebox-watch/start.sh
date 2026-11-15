@@ -3,19 +3,23 @@
 # Rewritten from REBUILD-SPEC.md §1. Idempotent; safe to re-run.
 # On run it:
 #   1. Starts the app (run-app.sh: tmux session "moviebox").
-#   2. Starts the Python server (server.py, port 8000) if not running.
-#   3. Starts the sync loop (sync.sh, ~60 s sweep) if not running.
-#   4. Re-arms the watchdog (watchdog.sh) — start.sh is what brings it
+#   2. Starts ttyd (port 7681) attached to the tmux session, so the
+#      terminal is served for the page iframe and the App tunnel.
+#      (Fix 16 Nov 2026: the first rewrite omitted this step and ttyd
+#      had to be started by hand on CodeSandbox.)
+#   3. Starts the Python server (server.py, port 8000) if not running.
+#   4. Starts the sync loop (sync.sh, ~60 s sweep) if not running.
+#   5. Re-arms the watchdog (watchdog.sh) — start.sh is what brings it
 #      back after it was killed on 14 Nov 2026 (§7).
-#   5. Starts keepalive.sh if not running.
-#   6. Starts the two cloudflared Quick Tunnels (8000 Watch, 7681 App)
+#   6. Starts keepalive.sh if not running.
+#   7. Starts the two cloudflared Quick Tunnels (8000 Watch, 7681 App)
 #      and writes the live URLs to tunnel-url.txt / app-url.txt.
 #      Old URLs are dead after a restart — the files are overwritten.
-#   7. Prints the fresh Watch + App URLs at the end.
+#   8. Prints the fresh Watch + App URLs at the end.
 #
 # NOTE (CodeSandbox): the tunnels are only needed where the host has no
 # public IP / the phone cannot resolve the host's preview domain. On a
-# host with a direct public IP (e.g. Oracle), skip step 6 and use the
+# host with a direct public IP (e.g. Oracle), skip step 7 and use the
 # public IP instead. The server itself is tunnel-agnostic.
 set -u
 WATCH_DIR="$HOME/moviebox-watch"
@@ -25,7 +29,17 @@ mkdir -p "$WATCH_DIR/media"
 # 1. The app (tmux session "moviebox").
 bash "$WATCH_DIR/run-app.sh"
 
-# 2. The Python server (port 8000).
+# 2. ttyd (port 7681) — serves the tmux session for the page iframe
+#    and the App tunnel. Must run after run-app.sh (the session must
+#    exist first). Idempotent: skipped if already running.
+if ! pgrep -f "ttyd -p 7681" >/dev/null 2>&1; then
+    nohup ttyd -p 7681 tmux attach-session -t moviebox >>"$WATCH_DIR/ttyd.log" 2>&1 &
+    echo "ttyd started (pid $!)"
+else
+    echo "ttyd already running"
+fi
+
+# 3. The Python server (port 8000).
 if ! pgrep -f "server.py" >/dev/null 2>&1; then
     nohup python3 "$WATCH_DIR/server.py" >>"$WATCH_DIR/server.log" 2>&1 &
     echo "server.py started (pid $!)"
@@ -35,7 +49,7 @@ fi
 # Seed activity so the watchdog gives a full 15-minute grace window.
 date +%s.%N > "$WATCH_DIR/last-activity.txt" 2>/dev/null || true
 
-# 3. The sync loop (~60 s sweep).
+# 4. The sync loop (~60 s sweep).
 if ! pgrep -f "sync.sh" >/dev/null 2>&1; then
     nohup bash "$WATCH_DIR/sync.sh" >>"$WATCH_DIR/sync.log" 2>&1 &
     echo "sync.sh started (pid $!)"
@@ -43,13 +57,13 @@ else
     echo "sync.sh already running"
 fi
 
-# 4. Re-arm the watchdog (kills any stale copy first).
+# 5. Re-arm the watchdog (kills any stale copy first).
 pkill -f "watchdog.sh" 2>/dev/null || true
 sleep 1
 nohup bash "$WATCH_DIR/watchdog.sh" >>"$WATCH_DIR/watchdog.log" 2>&1 &
 echo "watchdog.sh re-armed (pid $!)"
 
-# 5. keepalive.sh (companion prober; NOT a guard — see its header).
+# 6. keepalive.sh (companion prober; NOT a guard — see its header).
 if ! pgrep -f "keepalive.sh" >/dev/null 2>&1; then
     nohup bash "$WATCH_DIR/keepalive.sh" >>"$WATCH_DIR/keepalive.log" 2>&1 &
     echo "keepalive.sh started (pid $!)"
@@ -57,7 +71,7 @@ else
     echo "keepalive.sh already running"
 fi
 
-# 6. Cloudflare Quick Tunnels (skip with SKIP_TUNNELS=1 on a host that
+# 7. Cloudflare Quick Tunnels (skip with SKIP_TUNNELS=1 on a host that
 #    has a direct public IP).
 if [ "${SKIP_TUNNELS:-0}" = "1" ]; then
     echo "SKIP_TUNNELS=1: no tunnels started (use the host's public IP)"
@@ -95,7 +109,7 @@ else
     fi
 fi
 
-# 7. Fresh URLs.
+# 8. Fresh URLs.
 echo "---"
 echo "Watch: $(cat "$WATCH_DIR/tunnel-url.txt" 2>/dev/null || echo '(no tunnel — use http://<host>:8000/)')"
 echo "App:   $(cat "$WATCH_DIR/app-url.txt" 2>/dev/null || echo '(no tunnel — use http://<host>:7681/)')"
