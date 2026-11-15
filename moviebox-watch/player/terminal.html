@@ -1,0 +1,517 @@
+<!--
+  RECOVERED terminal.html — MovieBox Watch page
+  Source: MHTML saved from the user's Chrome tab (Snapshot-Content-Location:
+  https://lee-existing-exemption-carry.trycloudflare.com/, saved 15 Nov 2026
+  18:34:26 GMT / 16 Nov 2026 00:04 IST). Recovered 16 Nov 2026 ~00:05 IST.
+  WHAT THIS IS: the page's exact HTML structure + all 4 stylesheets
+  (inlined back from the MHTML parts) + the JS-rendered Downloads shelf
+  as it stood (Dragon Ball Super, 15 episodes, sizes, VLC links).
+  WHAT IS MISSING: all JavaScript. Chrome's MHTML save contains zero
+  <script> content (the original single file had its JS inline, per
+  REBUILD-SPEC §12 "Single file, no build step"). The JS must be
+  rewritten from REBUILD-SPEC.md §12 + §4 (endpoints). DOM-serialized
+  artefacts kept as-is: purple accent inline style (--accent #9333ea,
+  the user's saved pick), "Offline" pill state, baked-in episode rows
+  (the live JS re-renders the shelf from /api/downloads on load).
+  server.py / batch.py / batchctl.py were never on the phone (server-side
+  only) and remain recoverable only via Support reply or 1 Dec quota reset.
+-->
+<!DOCTYPE html><html lang="en" style="--accent: #9333ea; --accent-soft: rgba(147,51,234,.20);"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>
+@charset "utf-8";
+
+:root { --accent: #22d3ee; --accent-soft: rgba(34,211,238,.20); --bg: #0b0b10; --bg2: #12121a; --card: #17171f; --line: #262633; --text: #f2f2f5; --muted: #9a9aad; --ok: #22c55e; --radius: 16px; }
+
+* { box-sizing: border-box; }
+
+body { margin: 0px; background: var(--bg); color: var(--text); font: 15px / 1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+
+button, input, select { font: inherit; color: inherit; }
+
+button { cursor: pointer; }
+
+header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: rgb(13, 27, 48); border-bottom: 1px solid rgb(30, 47, 77); position: sticky; top: 0px; z-index: 20; }
+
+.brand { position: relative; display: flex; align-items: center; }
+
+.logo-btn { display: flex; align-items: center; gap: 10px; background: none; border: 0px; padding: 0px; cursor: pointer; font: inherit; }
+
+.logo-btn:focus-visible { outline: rgb(255, 255, 255) solid 2px; outline-offset: 3px; border-radius: 10px; }
+
+.logo-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-size: 15px; padding-left: 3px; flex: 0 0 auto; box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 8px; }
+
+.logo-word { font-weight: 800; font-size: 20px; color: rgb(255, 255, 255); white-space: nowrap; letter-spacing: 0.2px; }
+
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 13px; border: 1px solid var(--line); background: rgb(26, 26, 36); }
+
+.pill .dot { width: 9px; height: 9px; border-radius: 50%; background: rgb(245, 158, 11); }
+
+.pill.online .dot { background: var(--ok); }
+
+.pill.offline .dot { background: rgb(239, 68, 68); }
+
+.head-right { display: flex; align-items: center; gap: 8px; }
+
+.hbtn { background: rgb(32, 32, 44); border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; font-size: 14px; text-decoration: none; color: var(--text); transition: transform 0.08s; }
+
+.hbtn:active { transform: scale(0.96); }
+
+main { display: grid; grid-template-columns: minmax(0px, 1fr) 360px; gap: 18px; padding: 18px 20px; max-width: 1440px; margin: 0px auto; align-items: start; }
+
+section, aside { animation: 0.45s ease 0s 1 normal both running fadeUp; }
+
+aside { animation-delay: 0.08s; }
+
+@keyframes fadeUp { 
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0px); }
+}
+
+.term-wrap { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+
+.term-bar { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+
+.term-bar h2 { font-size: 14px; margin: 0px; font-weight: 600; color: var(--muted); }
+
+.term-bar .sp { flex: 1 1 0%; }
+
+.fs-btn { background: rgb(32, 32, 44); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+
+.fs-btn:active { transform: scale(0.96); }
+
+iframe { width: 100%; height: min(70vh, 760px); border: 0px; background: rgb(0, 0, 0); display: block; }
+
+.term-wrap:fullscreen iframe { height: 100%; }
+
+.term-wrap:fullscreen { border-radius: 0px; }
+
+.hint { padding: 10px 14px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+
+kbd { background: rgb(32, 32, 44); border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-left-color: ; border-left-style: ; border-left-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: inherit; }
+
+.fallback { padding: 14px; text-align: center; }
+
+.fallback a { color: rgb(255, 255, 255); background: var(--accent); padding: 9px 16px; border-radius: 9px; text-decoration: none; font-weight: 600; }
+
+.panel { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+
+.panel-head { display: flex; align-items: center; gap: 9px; padding: 14px 16px 12px; flex-wrap: wrap; }
+
+.panel-head h2 { font-size: 16px; margin: 0px; font-weight: 700; }
+
+.count-badge { background: var(--accent); color: rgb(255, 255, 255); border-radius: 999px; font-size: 12px; font-weight: 700; padding: 2px 9px; line-height: 1.4; }
+
+.total { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+.collapse-btn { display: none; background: rgb(32, 32, 44); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-size: 14px; }
+
+.disk-meter { display: flex; align-items: center; gap: 8px; padding: 0px 16px 12px; }
+
+.disk-track { flex: 1 1 0%; min-width: 48px; height: 4px; background: rgb(35, 35, 47); border-radius: 99px; overflow: hidden; }
+
+.disk-track i { display: block; height: 100%; width: 0px; background: rgb(34, 197, 94); border-radius: 99px; transition: width 0.5s, background-color 0.5s; }
+
+.disk-cap { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.u { white-space: nowrap; }
+
+.panel-note { padding: 0px 16px 12px; font-size: 12px; color: var(--muted); }
+
+.tools { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+
+.tools input { flex: 1 1 0%; min-width: 0px; background: rgb(15, 15, 22); border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; }
+
+.tools input:focus { outline: 2px solid var(--accent); outline-offset: 0px; }
+
+.tools select { background: rgb(15, 15, 22); border: 1px solid var(--line); border-radius: 9px; padding: 8px; }
+
+.cards { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
+
+.card { display: flex; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; animation: 0.35s ease 0s 1 normal both running cardIn; }
+
+.card:nth-child(2) { animation-delay: 0.05s; }
+
+.card:nth-child(3) { animation-delay: 0.1s; }
+
+.card:nth-child(4) { animation-delay: 0.15s; }
+
+.card:nth-child(5) { animation-delay: 0.2s; }
+
+@keyframes cardIn { 
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0px); }
+}
+
+.card.just-ready { animation: 1.6s ease 0s 1 normal none running glow; }
+
+@keyframes glow { 
+  0% { box-shadow: 0 0 0 0 var(--accent-soft); }
+  40% { box-shadow: 0 0 0 6px var(--accent-soft); }
+  100% { box-shadow: transparent 0px 0px 0px 0px; }
+}
+
+@media (hover: hover) {
+  .card:hover { transform: translateY(-2px); transition: transform 0.15s; }
+}
+
+.poster { width: 60px; height: 86px; border-radius: 8px; object-fit: cover; background: rgb(35, 35, 47); flex: 0 0 auto; }
+
+.poster-ph { width: 60px; height: 86px; border-radius: 8px; background: rgb(35, 35, 47); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+
+.meta { flex: 1 1 0%; min-width: 0px; }
+
+.title { font-weight: 600; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
+
+.bar { height: 6px; background: rgb(35, 35, 47); border-radius: 99px; overflow: hidden; margin-top: 9px; position: relative; }
+
+.bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 99px; transform: scaleX(0.38); transform-origin: left center; transition: transform 0.4s; }
+
+.bar::after { content: ""; position: absolute; inset: 0px; background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%); transform: translateX(-100%); animation: 1.6s linear 0s infinite normal none running shimmer; }
+
+@keyframes shimmer { 
+  100% { transform: translateX(100%); }
+}
+
+.speed { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+.actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.play-btn { background: var(--accent); color: rgb(255, 255, 255); border: 0px; border-radius: 8px; padding: 7px 13px; font-weight: 600; transition: transform 0.08s; }
+
+.del-btn { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; transition: transform 0.08s; }
+
+.vlc-btn { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; text-decoration: none; color: inherit; display: inline-block; transition: transform 0.08s; }
+
+.play-btn:active, .del-btn:active { transform: scale(0.95); }
+
+.resume { font-size: 12px; color: var(--accent); margin-top: 6px; }
+
+.confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.confirm span { font-size: 13px; }
+
+.confirm .yes { background: rgb(185, 28, 28); color: rgb(255, 255, 255); border: 0px; border-radius: 8px; padding: 6px 12px; }
+
+.confirm .no { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+
+.empty { padding: 22px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.skel { position: relative; overflow: hidden; background: rgb(24, 24, 34); border: 1px solid var(--line); border-radius: 14px; height: 110px; }
+
+.skel::after { content: ""; position: absolute; inset: 0px; background: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, 0.06) 50%, transparent 75%); transform: translateX(-100%); animation: 1.4s linear 0s infinite normal none running shimmer; }
+
+.overlay { position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.78); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+
+.overlay[hidden] { display: none; }
+
+.overlay { position: fixed; inset: 0px; z-index: 60; display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 16px; background: rgba(0, 0, 0, 0.72); }
+
+.player-box { background: rgb(16, 16, 23); border: 1px solid var(--line); border-radius: 16px; max-width: 900px; width: 100%; padding: 14px; max-height: calc(100dvh - 32px); overflow-y: auto; animation: 0.25s ease 0s 1 normal both running popIn; }
+
+@keyframes popIn { 
+  0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0px) scale(1); }
+}
+
+.player-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
+.player-head h3 { margin: 0px; font-size: 16px; flex: 1 1 0%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.close-btn { background: rgb(32, 32, 44); border: 1px solid var(--line); border-radius: 8px; width: 32px; height: 32px; font-size: 15px; }
+
+#ovVideo { width: 100%; max-height: 66vh; background: rgb(0, 0, 0); border-radius: 10px; display: block; }
+
+.next-ep #nextEpCount { font-weight: 700; }
+
+.player-foot .resume-btn { background: rgb(34, 211, 238); color: rgb(6, 42, 51); border-color: rgb(34, 211, 238); font-weight: 700; }
+
+.next-ep .next-play { background: rgb(34, 211, 238); color: rgb(6, 42, 51); border-color: rgb(34, 211, 238); font-weight: 700; }
+
+.next-ep[hidden] { display: none; }
+
+.next-ep { background: rgb(13, 27, 48); border: 1px solid rgb(42, 74, 107); color: rgb(255, 255, 255); border-radius: 10px; padding: 10px 12px; margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+
+.player-foot { display: flex; gap: 14px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+
+.player-foot.hbtn { padding: 11px 16px; min-height: 44px; }
+
+.player-foot .rh { font-size: 13px; color: var(--muted); }
+
+.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 60; }
+
+.toast { background: rgb(29, 29, 40); border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 3px solid var(--accent); border-radius: 10px; padding: 10px 14px; font-size: 14px; box-shadow: rgba(0, 0, 0, 0.45) 0px 6px 24px; animation: 0.25s ease 0s 1 normal both running cardIn; }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+  iframe { height: 55vh; }
+  .collapse-btn { display: inline-block; }
+  .panel.collapsed .cards, .panel.collapsed .tools, .panel.collapsed .empty { display: none; }
+  .panel.collapsed .disk-meter, .panel.collapsed .panel-note { display: none; }
+  header { gap: 10px; padding: 11px 14px; }
+  main { padding: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: auto ease 0s 1 normal none running none !important; transition: none !important; }
+}
+
+.key-bar { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--bg2); }
+
+.key-btn { flex: 1 1 0%; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-language-override: normal; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 600; font-stretch: normal; font-size: 13px; line-height: 1.4; font-family: system-ui, sans-serif; cursor: pointer; }
+
+.key-btn:active { transform: scale(0.96); }
+
+.key-back { flex: 2 1 0%; background: var(--accent); border-color: var(--accent); color: rgb(255, 255, 255); }
+
+.key-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.poster-ph.initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: rgb(255, 255, 255); }
+
+#diskCap, #dlTotal, .card .u { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.probe { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+
+.probe span { font-size: 11px; line-height: 1; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+main { max-width: 1600px; }
+
+@media (min-width: 901px) {
+  .panel { position: sticky; top: 16px; align-self: start; }
+}
+
+@media (max-width: 900px) {
+  .overlay { padding: 0px; align-items: stretch; }
+  iframe { height: 62vh; }
+  .key-bar { position: sticky; bottom: 0px; z-index: 5; }
+  .player-box { width: 100%; max-width: 100%; height: auto; max-height: 100dvh; overflow-y: auto; border-radius: 0px; padding-bottom: max(14px,env(safe-area-inset-bottom)); }
+  #ovVideo { max-height: 56vh; }
+  input, select { font-size: 16px; }
+  main { padding-left: max(14px,env(safe-area-inset-left)); padding-right: max(14px,env(safe-area-inset-right)); }
+}
+
+.term-wrap:fullscreen { display: flex; flex-direction: column; }
+
+.term-wrap:fullscreen iframe { flex: 1 1 auto; min-height: 0px; height: auto; }
+
+body { padding-bottom: env(safe-area-inset-bottom,0px); }
+
+.series-card { flex-wrap: wrap; }
+
+.series-card .eps { display: none; border-top: 1px solid rgb(38, 38, 44); margin-top: 8px; padding-top: 2px; flex-basis: 100%; }
+
+.series-card.open .eps { display: block; }
+
+.series-head { cursor: pointer; }
+
+.series-hint { opacity: 0.6; font-size: 12px; }
+
+.ep-row { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-top: 1px solid rgb(30, 30, 36); }
+
+.ep-row:first-child { border-top: 0px; }
+
+.ep-lab { font-weight: 700; white-space: nowrap; }
+
+.ep-name { flex: 1 1 0%; min-width: 0px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ep-row .actions { margin: 0px; flex-shrink: 0; }
+</style><style>
+@charset "utf-8";
+
+#cards { display: flex; flex-direction: column; gap: 18px; padding: 16px; }
+
+.card.series-card { flex-wrap: wrap; gap: 0px; padding: 0px; overflow: hidden; position: relative; border-radius: 16px; }
+
+.card.series-card .poster, .card.series-card .poster-ph { flex: 0 0 100%; width: 100%; height: 230px; object-fit: contain; object-position: center center; background: rgb(14, 14, 19); border-radius: 0px; cursor: pointer; }
+
+.card.series-card .poster-ph { font-size: 0px; }
+
+.card.series-card::before { content: "SERIES"; position: absolute; top: 10px; left: 10px; z-index: 3; background: rgba(8, 8, 12, 0.72); color: rgb(255, 255, 255); font-size: 10px; font-weight: 800; letter-spacing: 0.12em; padding: 4px 8px; border-radius: 99px; }
+
+.card.series-card .meta { flex: 1 1 100%; height: 84px; margin-top: -84px; display: flex; flex-direction: column; justify-content: flex-end; padding: 0px 16px 10px; position: relative; z-index: 1; cursor: pointer; background: linear-gradient(to top, rgba(8, 8, 12, 0.94), rgba(8, 8, 12, 0.72) 55%, rgba(8, 8, 12, 0)); }
+
+.card.series-card .meta .title { font-size: 20px; font-weight: 800; color: rgb(255, 255, 255); text-shadow: rgba(0, 0, 0, 0.6) 0px 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card.series-card .meta .series-line { font-size: 13px; color: rgba(255, 255, 255, 0.92); text-shadow: rgba(0, 0, 0, 0.6) 0px 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card.series-card .meta .sub { display: none; }
+
+.series-foot { flex: 1 1 100%; padding: 10px 16px 12px; border-top: 1px solid rgb(38, 38, 44); cursor: pointer; }
+
+.series-foot .foot-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+.series-foot .series-prog2 { font-size: 13px; font-weight: 600; }
+
+.series-foot .series-open { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+.series-foot .prog { height: 7px; background: rgb(35, 35, 47); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+
+.series-foot .prog i { display: block; height: 100%; width: 0px; background: rgb(34, 197, 94); border-radius: 99px; }
+
+.card.series-card:not(.open) .eps, .card.series-card:not(.open) .batch-row { display: none; }
+
+.card.series-card.open .eps { display: block; }
+
+.mbx-runbar { flex: 1 1 100%; display: none; align-items: center; gap: 10px; padding: 9px 16px; border-top: 1px solid rgb(38, 38, 44); background: rgb(23, 23, 28); }
+
+.mbx-runbar .rb-txt { flex: 1 1 0%; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.mbx-runbar .rb-stop { background: rgb(58, 58, 68); color: rgb(255, 255, 255); border: 0px; border-radius: 8px; padding: 7px 13px; font-weight: 700; cursor: pointer; }
+
+.batch-row { flex: 1 1 100%; padding: 14px 16px; border-top: 1px solid rgb(38, 38, 44); background: rgb(23, 23, 28); }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.chip-row.lang-row { margin-top: 12px; }
+
+.chip { border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 99px; padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.chip.sel { background: var(--accent); border-color: var(--accent); color: rgb(255, 255, 255); }
+
+.lang-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+
+.start-btn { display: block; width: 100%; background: var(--accent); color: rgb(255, 255, 255); border: 0px; border-radius: 10px; padding: 12px 14px; font-size: 15px; font-weight: 700; text-align: left; cursor: pointer; margin-top: 12px; }
+
+.start-btn .start-main { display: block; }
+
+.start-btn .start-sub { display: block; font-size: 12px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+
+.start-btn.stop { background: rgb(58, 58, 68); }
+
+.del-series { display: block; width: 100%; background: transparent; border: 1px solid rgba(217, 45, 32, 0.6); color: rgb(255, 122, 107); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+
+.del-series.confirm { background: rgb(217, 45, 32); border-color: rgb(217, 45, 32); color: rgb(255, 255, 255); }
+
+.batch-status { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.45; }
+
+.card:not(.series-card) { flex-wrap: nowrap; gap: 12px; padding: 12px; border-radius: 14px; overflow: visible; position: static; }
+
+.card:not(.series-card) .poster, .card:not(.series-card) .poster-ph { flex: 0 0 auto; width: 60px; height: 86px; object-fit: contain; background: rgb(35, 35, 47); border-radius: 8px; }
+
+.card:not(.series-card) .poster-ph { font-size: 22px; font-weight: 700; }
+
+.card:not(.series-card) .meta { flex: 1 1 0%; min-width: 0px; margin-top: 0px; height: auto; display: block; padding: 0px; position: static; background: none; }
+
+.card:not(.series-card) .meta .title { font-size: 15.5px; font-weight: 600; color: inherit; text-shadow: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card:not(.series-card) .meta .sub { display: none; }
+
+.card:not(.series-card) .meta .probe { display: none; }
+
+.card:not(.series-card) .film-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card:not(.series-card) .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.card.series-card .eps { flex: 1 1 100%; padding: 0px 16px 6px; border-top: 1px solid rgb(38, 38, 44); }
+
+.ep-row { flex-wrap: wrap; row-gap: 5px; padding: 11px 0px 12px; }
+
+.ep-row .ep-lab { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
+.ep-row .ep-name { font-weight: 600; font-size: 14px; }
+
+.ep-row .ep-sub { flex: 1 1 100%; font-size: 12px; color: var(--muted); }
+
+.ep-row .ep-sub:empty { display: none; }
+
+.ep-row .actions { flex: 0 1 auto; margin-left: auto; flex-wrap: wrap; }
+
+.mbx-over { outline: rgb(255, 90, 77) solid 2px; }
+
+.mbx-diag { display: none; color: rgb(255, 90, 77); font-size: 12px; padding: 6px 16px; }
+
+.mbx-diag.show { display: block; }
+
+@media (max-width: 640px) {
+  .card.series-card .poster, .card.series-card .poster-ph { height: 200px; }
+  .card.series-card .meta { height: 78px; margin-top: -78px; }
+  .card.series-card .meta .title { font-size: 18px; }
+  .ep-row .actions { flex: 1 1 100%; justify-content: flex-end; }
+}
+</style><style>
+@charset "utf-8";
+
+.head-right { position: relative; }
+
+.accent-pop { position: fixed; top: 58px; left: 16px; display: none; background: rgb(20, 20, 28); border: 1px solid rgb(42, 42, 53); border-radius: 10px; padding: 8px; gap: 8px; z-index: 50; }
+
+.accent-pop.open { display: flex; }
+
+.accent-pop button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35); cursor: pointer; padding: 0px; }
+
+.accent-pop button.sel { border-color: rgb(255, 255, 255); }
+
+#shutdownBtn { display: none; background: transparent; color: rgb(248, 113, 113); border: 1px solid rgb(248, 113, 113); border-radius: 8px; padding: 4px 10px; font: inherit; cursor: pointer; white-space: nowrap; }
+
+#shutdownBtn.show { display: inline-block; }
+
+#statusPill { margin-left: auto; }
+
+.pill.holding { filter: brightness(1.35); }
+
+#dlBtn { background: var(--accent); border-color: var(--accent); color: rgb(255, 255, 255); }
+</style><style>
+@charset "utf-8";
+
+@media (min-width: 1200px) {
+  body { font-size: 16px; }
+  header { padding: 12px 28px; }
+  main { max-width: 1760px; grid-template-columns: minmax(0px, 1fr) 440px; gap: 24px; padding: 24px 28px; }
+  .term-wrap iframe { height: calc(-270px + 100vh); min-height: 680px; }
+  .panel { max-height: calc(-32px + 100vh); overflow-y: auto; }
+  .poster, .poster-ph { width: 72px; height: 102px; }
+  .card { padding: 14px; }
+  .hint { font-size: 14px; }
+  .key-bar { padding: 10px 14px; gap: 10px; }
+  .key-bar .key-btn { padding: 10px 14px; font-size: 15px; }
+}
+
+@media (min-width: 1600px) {
+  body { font-size: 17px; }
+  main { max-width: 2000px; grid-template-columns: minmax(0px, 1fr) 520px; gap: 28px; }
+  .term-wrap iframe { min-height: 760px; }
+}
+</style>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0b10">
+<title>MovieBox Terminal</title>
+
+
+
+
+</head>
+<body>
+<header>
+  <div class="brand"><button class="logo-btn" id="accentDot" title="Accent colour" aria-label="Accent colour"><span class="logo-mark">▶</span><span class="logo-word">MovieBox</span></button></div>
+  <div class="pill offline" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
+  <div class="head-right">
+    <button id="shutdownBtn" type="button">Shut down</button><div class="accent-pop" id="accentPop"><button data-accent="#e50914" style="background:#e50914" title="Red" aria-label="Red"></button><button data-accent="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button><button data-accent="#16a34a" style="background:#16a34a" title="Green" aria-label="Green"></button><button data-accent="#9333ea" style="background:#9333ea" title="Purple" aria-label="Purple" class="sel"></button><button data-accent="#ea580c" style="background:#ea580c" title="Orange" aria-label="Orange"></button></div>
+  </div>
+</header>
+<main>
+<section class="term-wrap" id="termWrap">
+    <div class="term-bar"><h2>MovieBox Terminal</h2><span class="sp"></span><button class="fs-btn" id="fsBtn">⛶ Fullscreen</button></div>
+    <iframe id="appFrame" title="MovieBox app" allow="autoplay; fullscreen" src="" data-orig-src="from /api/links (ttyd tunnel URL)"></iframe>
+    
+    <div class="hint">Search in the app, press download — the film appears in Downloads on the side. <kbd>Ctrl+T</kbd> TV · <kbd>?</kbd> Help · <kbd>q</kbd> Quit</div>
+<div class="key-bar" id="keyBar"><button class="key-btn key-back" type="button" data-key="esc">⟲ Back · Esc</button><button class="key-btn" type="button" data-key="up">↑</button><button class="key-btn" type="button" data-key="down">↓</button><button class="key-btn" type="button" data-key="tab">Tab</button><button class="key-btn" type="button" data-key="enter">Enter ⏎</button></div>
+  </section>
+  <aside class="panel" id="dlPanel">
+    <div class="panel-head"><h2>Downloads</h2><span class="count-badge" id="dlCount">1</span><span class="total" id="dlTotal">2.1 GB</span><button class="collapse-btn" id="collapseBtn">▾</button></div>
+    <div class="disk-meter" id="diskMeter"><div class="disk-track"><i id="diskFill" style="width: 26.3804%; background: rgb(34, 197, 94);"></i></div><span class="disk-cap" id="diskCap">Films&nbsp;4.3&nbsp;GB · 12.0&nbsp;GB free for films</span></div>
+    <div class="panel-note">Films are stored in the cloud, not on the phone.</div>
+    <div class="tools"><input id="filterInput" type="search" placeholder="Filter downloads…" aria-label="Filter downloads"><select id="sortSel" aria-label="Sort downloads"><option value="newest">Newest</option><option value="name">Name</option><option value="size">Size</option></select></div>
+    <div class="mbx-diag"></div><div class="cards" id="cards"><div class="card series-card" data-name="series:Dragon Ball Super s1" data-idx="0" style="animation-delay: 0s;"><img class="poster" src="https://pbcdn.aoneroom.com/image/2025/11/03/164b84e43344c7786c5f72f00fcdcf7c.jpg" alt="" loading="lazy"><div class="meta series-head"><div class="series-line">Season 1 · 15 episodes · 2017</div><div class="title">Dragon Ball Super</div><div class="sub series-prog">Season 1 · 15 of 15 ready</div><div class="sub">2017</div><div class="sub series-hint">Tap to show episodes</div></div><div class="series-foot"><div class="foot-row"><span class="series-prog2">15 of 15 episodes ready</span><span class="series-open">Open ›</span></div><div class="prog"><i style="width: 100%;"></i></div></div><div class="mbx-runbar" style="display: none;"><span class="rb-txt"></span><button type="button" class="rb-stop">Stop</button></div><div class="batch-row" data-count="5" data-lang="hindi" data-mode="idle"><div class="chip-row"><button type="button" class="chip sel" data-v="5">Next 5</button><button type="button" class="chip" data-v="10">Next 10</button><button type="button" class="chip" data-v="20">Next 20</button><button type="button" class="chip" data-v="all">All remaining</button></div><div class="chip-row lang-row"><span class="lang-label">AUDIO</span><button type="button" class="chip lang-chip sel" data-v="hindi">Hindi</button><button type="button" class="chip lang-chip" data-v="english">English dub</button></div><button type="button" class="start-btn"><span class="start-main">Download next 5 episodes · ~0.7 GB</span><span class="start-sub">Starts at Episode 16 — ready ones skip automatically</span></button><button type="button" class="del-series">Delete whole series</button><div class="batch-status">Could not reach the Episodes pane in the app.</div></div><div class="eps"><div class="ep-row" data-name="Dragon Ball Super - S01E01.f0.mp4"><span class="ep-lab">Ep 1</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E01.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">149.6 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E02.f0.mp4"><span class="ep-lab">Ep 2</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E02.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">157.4 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E03.f0.mp4"><span class="ep-lab">Ep 3</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E03.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">117.4 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E04.f0.mp4"><span class="ep-lab">Ep 4</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E04.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">130.2 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E05.f0.mp4"><span class="ep-lab">Ep 5</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E05.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">124.9 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E06.f0.mp4"><span class="ep-lab">Ep 6</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E06.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">130.5 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E07.f0.mp4"><span class="ep-lab">Ep 7</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E07.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">144.7 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E08.f0.mp4"><span class="ep-lab">Ep 8</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E08.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">157.2 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E09.f0.mp4"><span class="ep-lab">Ep 9</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E09.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">167.8 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E10.f0.mp4"><span class="ep-lab">Ep 10</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E10.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">165.2 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E11.f0.mp4"><span class="ep-lab">Ep 11</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E11.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">171.9 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E12.f0.mp4"><span class="ep-lab">Ep 12</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E12.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">142.0 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E13.f0.mp4"><span class="ep-lab">Ep 13</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E13.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">144.8 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E14.f0.mp4"><span class="ep-lab">Ep 14</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E14.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">147.8 MB</div></div><div class="ep-row" data-name="Dragon Ball Super - S01E15.f0.mp4"><span class="ep-lab">Ep 15</span><span class="ep-name">Dragon Ball Super</span><div class="actions"><button class="play-btn" type="button">▶ Play</button><button class="del-btn" type="button" aria-label="Delete">🗑 Delete</button><a class="vlc-btn" href="intent://lee-existing-exemption-carry.trycloudflare.com/media/Dragon%20Ball%20Super%20-%20S01E15.full.mp4#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end">Open in VLC</a></div><div class="ep-sub">91.3 MB</div></div></div></div></div>
+    
+  </aside>
+</main>
+
+<div class="toasts" id="toasts"></div>
+
+
+
+
+</body></html>
