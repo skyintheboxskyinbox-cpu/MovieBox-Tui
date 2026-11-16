@@ -601,7 +601,14 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
   async function apiSilent(path, opts) { try { return await api(path, opts); } catch (e) { return null; } }
 
   /* ---------------- sound effects (Web Audio, synthesized — no files) ---------------- */
-  /* Four distinctive UI sounds, all synthesized with the Web Audio API.
+  /* Four QUIET, clearly different UI sounds, all soft sine tones.
+     No noise bursts, no sawtooth — those sounded weird and loud.
+     Master gain is low (0.3) and every voice is a gentle sine, so
+     nothing startles. Each sound has its own pitch and character:
+       click  = one very short high tick
+       chime  = a gentle two-note melody (download done)
+       play   = a soft rising tone (film starting)
+       error  = a soft low bloop
      They fire ONLY on UI events, never during film playback: the
      download-complete chime is held back while the player overlay is
      open and plays when the player closes instead. */
@@ -616,7 +623,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       if (!AC) return null;
       try { audioCtx = new AC(); } catch (e) { return null; }
       masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.9;
+      masterGain.gain.value = 0.3;
       masterGain.connect(audioCtx.destination);
     }
     if (audioCtx.state === 'suspended') {
@@ -633,7 +640,9 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
   function playerOpen() {
     return !!(typeof player !== 'undefined' && player && player.overlay && !player.overlay.hidden);
   }
-  /* one oscillator voice: pitch glide + gain envelope */
+  /* one soft sine voice: optional pitch glide + gentle gain envelope.
+     peak is the voice level into the master gain (0.3), so the
+     effective loudness stays low (about a third of the old sounds). */
   function tone(opts) {
     var ctx = audioContext();
     if (!ctx || !masterGain) return;
@@ -641,96 +650,41 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     var dur = opts.dur || 0.2;
     var o = ctx.createOscillator();
     var g = ctx.createGain();
-    o.type = opts.type || 'sine';
+    o.type = 'sine';
     o.frequency.setValueAtTime(opts.from, t0);
     if (opts.to && opts.to !== opts.from) o.frequency.exponentialRampToValueAtTime(Math.max(opts.to, 1), t0 + dur);
-    if (opts.detune) o.detune.value = opts.detune;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime(opts.peak || 0.15, t0 + (opts.attack || 0.008));
+    g.gain.linearRampToValueAtTime(opts.peak || 0.10, t0 + (opts.attack || 0.008));
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g);
     g.connect(masterGain);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
   }
-  /* short filtered noise burst (click snap / thunk body) */
-  function noiseBurst(opts) {
-    var ctx = audioContext();
-    if (!ctx || !masterGain) return;
-    var dur = opts.dur || 0.05;
-    var t0 = ctx.currentTime + (opts.delay || 0);
-    var len = Math.max(1, Math.floor(ctx.sampleRate * dur));
-    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    var data = buf.getChannelData(0);
-    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-    var f = ctx.createBiquadFilter();
-    f.type = opts.filterType || 'bandpass';
-    f.frequency.value = opts.freq || 2500;
-    f.Q.value = opts.q || 1;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(opts.peak || 0.12, t0);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(f);
-    f.connect(g);
-    g.connect(masterGain);
-    src.start(t0);
-  }
-  /* rising filtered sawtooth "whoosh" for the play sweep */
-  function sweepWhoosh() {
-    var ctx = audioContext();
-    if (!ctx || !masterGain) return;
-    var t0 = ctx.currentTime;
-    var o = ctx.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(220, t0);
-    o.frequency.exponentialRampToValueAtTime(880, t0 + 0.45);
-    var f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.Q.value = 1.2;
-    f.frequency.setValueAtTime(400, t0);
-    f.frequency.exponentialRampToValueAtTime(4200, t0 + 0.45);
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime(0.10, t0 + 0.06);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
-    o.connect(f);
-    f.connect(g);
-    g.connect(masterGain);
-    o.start(t0);
-    o.stop(t0 + 0.55);
-  }
-  /* 1 — crisp, pleasant click: filtered noise snap + short high ping */
+  /* 1 — very short, soft, high tick: one sine blip, ~1400 Hz, ~35 ms */
   function sfxClick() {
     if (soundMuted) return;
     if (!audioContext()) return;
-    noiseBurst({ dur: 0.03, freq: 2800, q: 0.8, peak: 0.10 });
-    tone({ from: 1350, to: 850, dur: 0.06, type: 'triangle', peak: 0.10, attack: 0.004 });
+    tone({ from: 1400, dur: 0.035, peak: 0.10, attack: 0.004 });
   }
-  /* 2 — warm two-note chime: C5 then E5 over a low C4 root */
+  /* 2 — gentle, warm two-note chime: E5 then G5, soft sines */
   function sfxChime() {
     if (soundMuted) return;
     if (!audioContext()) return;
-    tone({ from: 261.63, dur: 0.9, type: 'sine', peak: 0.05, attack: 0.02 });
-    tone({ from: 523.25, dur: 0.55, type: 'triangle', peak: 0.14, attack: 0.01 });
-    tone({ from: 523.25, dur: 0.55, type: 'sine', peak: 0.07, attack: 0.01, detune: 5 });
-    tone({ from: 659.25, dur: 0.85, type: 'triangle', peak: 0.16, attack: 0.01, delay: 0.14 });
-    tone({ from: 1318.5, dur: 0.5, type: 'sine', peak: 0.04, attack: 0.01, delay: 0.14 });
+    tone({ from: 659.25, dur: 0.55, peak: 0.12, attack: 0.02 });
+    tone({ from: 783.99, dur: 0.7, peak: 0.12, attack: 0.02, delay: 0.16 });
   }
-  /* 3 — short rising sweep when a film starts playing */
+  /* 3 — soft, smooth rising sine tone when a film starts playing */
   function sfxSweep() {
     if (soundMuted) return;
     if (!audioContext()) return;
-    sweepWhoosh();
-    tone({ from: 880, to: 1760, dur: 0.45, type: 'sine', peak: 0.05, attack: 0.05, delay: 0.05 });
+    tone({ from: 392, to: 784, dur: 0.45, peak: 0.12, attack: 0.06 });
   }
-  /* 4 — low, soft thunk for errors */
+  /* 4 — soft, low, short bloop for errors: low sine, quiet */
   function sfxThunk() {
     if (soundMuted) return;
     if (!audioContext()) return;
-    tone({ from: 130, to: 52, dur: 0.20, type: 'sine', peak: 0.28, attack: 0.005 });
-    noiseBurst({ dur: 0.12, freq: 220, q: 0.7, peak: 0.16, filterType: 'lowpass' });
+    tone({ from: 180, to: 110, dur: 0.18, peak: 0.15, attack: 0.006 });
   }
   function updateSoundBtn() {
     var b = document.getElementById('soundBtn');
