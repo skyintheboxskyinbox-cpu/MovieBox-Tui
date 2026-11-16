@@ -33,9 +33,9 @@ header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; back
 
 .brand { position: relative; display: flex; align-items: center; }
 
-.logo-btn { display: flex; align-items: center; gap: 10px; background: none; border: 0px; padding: 0px; cursor: pointer; font: inherit; }
+.logo-btn { display: flex; align-items: center; gap: 10px; background: none; border: 0px; padding: 0px; cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
 
-.logo-btn:focus-visible { outline: rgb(255, 255, 255) solid 2px; outline-offset: 3px; border-radius: 10px; }
+.logo-btn:focus-visible { outline: none; }
 
 .logo-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-size: 15px; padding-left: 3px; flex: 0 0 auto; box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 8px; }
 
@@ -258,13 +258,13 @@ kbd { background: rgb(32, 32, 44); border-top-color: ; border-top-style: ; borde
 
 .key-bar { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--bg2); }
 
-.key-btn { flex: 1 1 0%; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-language-override: normal; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 600; font-stretch: normal; font-size: 13px; line-height: 1.4; font-family: system-ui, sans-serif; cursor: pointer; }
+.key-btn { flex: 1 1 0%; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-language-override: normal; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 600; font-stretch: normal; font-size: 13px; line-height: 1.4; font-family: system-ui, sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
 
 .key-btn:active { transform: scale(0.96); }
 
 .key-back { flex: 2 1 0%; background: var(--accent); border-color: var(--accent); color: rgb(255, 255, 255); }
 
-.key-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.key-btn:focus-visible { outline: none; }
 
 .poster-ph.initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: rgb(255, 255, 255); }
 
