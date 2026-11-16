@@ -488,7 +488,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
   <div class="brand"><button class="logo-btn" id="accentDot" title="Accent colour" aria-label="Accent colour"><span class="logo-mark">▶</span><span class="logo-word">MovieBox</span></button></div>
   <div class="pill offline" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
   <div class="head-right">
-    <button id="shutdownBtn" type="button">Shut down</button><div class="accent-pop" id="accentPop"><button data-accent="#e50914" style="background:#e50914" title="Red" aria-label="Red"></button><button data-accent="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button><button data-accent="#16a34a" style="background:#16a34a" title="Green" aria-label="Green"></button><button data-accent="#9333ea" style="background:#9333ea" title="Purple" aria-label="Purple" class="sel"></button><button data-accent="#ea580c" style="background:#ea580c" title="Orange" aria-label="Orange"></button></div>
+    <button id="shutdownBtn" type="button">Shut down</button><div class="accent-pop" id="accentPop"><button data-accent="#e50914" style="background:#e50914" title="Red" aria-label="Red"></button><button data-accent="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button><button data-accent="#16a34a" style="background:#16a34a" title="Green" aria-label="Green"></button><button data-accent="#9333ea" style="background:#9333ea" title="Purple" aria-label="Purple" class="sel"></button><button data-accent="#ea580c" style="background:#ea580c" title="Orange" aria-label="Orange"></button><button id="soundBtn" type="button" aria-label="Toggle sound" title="Sound on">🔊</button></div>
   </div>
 </header>
 <main>
@@ -576,6 +576,8 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
   function isAndroid() { return /Android/i.test(navigator.userAgent); }
 
   function toast(msg, ms) {
+    /* every error toast in this file starts with "Could not" — low thunk */
+    if (typeof msg === 'string' && msg.indexOf('Could not') === 0) sfxThunk();
     var box = document.getElementById('toasts');
     if (!box) return;
     var el = document.createElement('div');
@@ -597,6 +599,172 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     } finally { clearTimeout(t); }
   }
   async function apiSilent(path, opts) { try { return await api(path, opts); } catch (e) { return null; } }
+
+  /* ---------------- sound effects (Web Audio, synthesized — no files) ---------------- */
+  /* Four distinctive UI sounds, all synthesized with the Web Audio API.
+     They fire ONLY on UI events, never during film playback: the
+     download-complete chime is held back while the player overlay is
+     open and plays when the player closes instead. */
+  var audioCtx = null;
+  var masterGain = null;
+  var soundMuted = false;
+  var pendingChime = false;
+
+  function audioContext() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { audioCtx = new AC(); } catch (e) { return null; }
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.9;
+      masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') {
+      try { var p = audioCtx.resume(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    }
+    return audioCtx;
+  }
+  function loadSoundPref() {
+    try { soundMuted = localStorage.getItem('mb_sound') === 'off'; } catch (e) { soundMuted = false; }
+  }
+  function saveSoundPref() {
+    try { localStorage.setItem('mb_sound', soundMuted ? 'off' : 'on'); } catch (e) {}
+  }
+  function playerOpen() {
+    return !!(typeof player !== 'undefined' && player && player.overlay && !player.overlay.hidden);
+  }
+  /* one oscillator voice: pitch glide + gain envelope */
+  function tone(opts) {
+    var ctx = audioContext();
+    if (!ctx || !masterGain) return;
+    var t0 = ctx.currentTime + (opts.delay || 0);
+    var dur = opts.dur || 0.2;
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = opts.type || 'sine';
+    o.frequency.setValueAtTime(opts.from, t0);
+    if (opts.to && opts.to !== opts.from) o.frequency.exponentialRampToValueAtTime(Math.max(opts.to, 1), t0 + dur);
+    if (opts.detune) o.detune.value = opts.detune;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(opts.peak || 0.15, t0 + (opts.attack || 0.008));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g);
+    g.connect(masterGain);
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  }
+  /* short filtered noise burst (click snap / thunk body) */
+  function noiseBurst(opts) {
+    var ctx = audioContext();
+    if (!ctx || !masterGain) return;
+    var dur = opts.dur || 0.05;
+    var t0 = ctx.currentTime + (opts.delay || 0);
+    var len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var f = ctx.createBiquadFilter();
+    f.type = opts.filterType || 'bandpass';
+    f.frequency.value = opts.freq || 2500;
+    f.Q.value = opts.q || 1;
+    var g = ctx.createGain();
+    g.gain.setValueAtTime(opts.peak || 0.12, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f);
+    f.connect(g);
+    g.connect(masterGain);
+    src.start(t0);
+  }
+  /* rising filtered sawtooth "whoosh" for the play sweep */
+  function sweepWhoosh() {
+    var ctx = audioContext();
+    if (!ctx || !masterGain) return;
+    var t0 = ctx.currentTime;
+    var o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, t0);
+    o.frequency.exponentialRampToValueAtTime(880, t0 + 0.45);
+    var f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = 1.2;
+    f.frequency.setValueAtTime(400, t0);
+    f.frequency.exponentialRampToValueAtTime(4200, t0 + 0.45);
+    var g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.10, t0 + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+    o.connect(f);
+    f.connect(g);
+    g.connect(masterGain);
+    o.start(t0);
+    o.stop(t0 + 0.55);
+  }
+  /* 1 — crisp, pleasant click: filtered noise snap + short high ping */
+  function sfxClick() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    noiseBurst({ dur: 0.03, freq: 2800, q: 0.8, peak: 0.10 });
+    tone({ from: 1350, to: 850, dur: 0.06, type: 'triangle', peak: 0.10, attack: 0.004 });
+  }
+  /* 2 — warm two-note chime: C5 then E5 over a low C4 root */
+  function sfxChime() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 261.63, dur: 0.9, type: 'sine', peak: 0.05, attack: 0.02 });
+    tone({ from: 523.25, dur: 0.55, type: 'triangle', peak: 0.14, attack: 0.01 });
+    tone({ from: 523.25, dur: 0.55, type: 'sine', peak: 0.07, attack: 0.01, detune: 5 });
+    tone({ from: 659.25, dur: 0.85, type: 'triangle', peak: 0.16, attack: 0.01, delay: 0.14 });
+    tone({ from: 1318.5, dur: 0.5, type: 'sine', peak: 0.04, attack: 0.01, delay: 0.14 });
+  }
+  /* 3 — short rising sweep when a film starts playing */
+  function sfxSweep() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    sweepWhoosh();
+    tone({ from: 880, to: 1760, dur: 0.45, type: 'sine', peak: 0.05, attack: 0.05, delay: 0.05 });
+  }
+  /* 4 — low, soft thunk for errors */
+  function sfxThunk() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 130, to: 52, dur: 0.20, type: 'sine', peak: 0.28, attack: 0.005 });
+    noiseBurst({ dur: 0.12, freq: 220, q: 0.7, peak: 0.16, filterType: 'lowpass' });
+  }
+  function updateSoundBtn() {
+    var b = document.getElementById('soundBtn');
+    if (!b) return;
+    b.textContent = soundMuted ? '🔇' : '🔊';
+    b.title = soundMuted ? 'Sound off — tap to unmute' : 'Sound on — tap to mute';
+    b.classList.toggle('muted', soundMuted);
+  }
+  function wireSound() {
+    loadSoundPref();
+    updateSoundBtn();
+    var b = document.getElementById('soundBtn');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      soundMuted = !soundMuted;
+      saveSoundPref();
+      updateSoundBtn();
+      if (!soundMuted) { audioContext(); sfxClick(); }
+    });
+  }
+  /* click sound for every page button (capture phase, so it fires even
+     when a handler stops propagation); the mute toggle is excluded —
+     it plays its own confirmation click only when unmuting. */
+  function wireClickSounds() {
+    document.addEventListener('click', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+      if (!b || b.id === 'soundBtn' || b.disabled) return;
+      sfxClick();
+    }, true);
+    /* browsers block audio until a user gesture: warm up the context */
+    ['pointerdown', 'keydown'].forEach(function (evt) {
+      document.addEventListener(evt, function () { audioContext(); }, { passive: true });
+    });
+  }
 
   /* ---------------- state ---------------- */
   var shelfItems = [];          // last good /api/downloads items
@@ -622,7 +790,9 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       '.copy-box p{color:var(--muted);font-size:13px;margin:0 0 10px}' +
       '.copy-box input{width:100%;background:#0f0f16;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px}' +
       '.copy-box .copy-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}' +
-      '.copy-box .copy-actions .hbtn{padding:11px 14px;text-align:center;display:block}';
+      '.copy-box .copy-actions .hbtn{padding:11px 14px;text-align:center;display:block}' +
+      '#soundBtn.muted{opacity:.55}' +
+      '#accentPop #soundBtn{background:#20202c;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}';
     document.head.appendChild(st);
   }
 
@@ -642,7 +812,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     root.style.setProperty('--accent', hex);
     root.style.setProperty('--accent-soft', ACCENTS[hex]);
     try { localStorage.setItem('mb_accent', hex); } catch (e) {}
-    $$('#accentPop button').forEach(function (b) {
+    $$('#accentPop button[data-accent]').forEach(function (b) {
       b.classList.toggle('sel', b.getAttribute('data-accent') === hex);
     });
   }
@@ -659,7 +829,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       ev.stopPropagation();
       pop.classList.toggle('open');
     });
-    $$('#accentPop button').forEach(function (b) {
+    $$('#accentPop button[data-accent]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
         ev.stopPropagation();
         applyAccent(b.getAttribute('data-accent'));
@@ -1038,6 +1208,22 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     });
   }
 
+  /* signature of the shelf contents: film keys + every episode file, so
+     a newly finished film OR a new episode inside an existing series
+     counts as a new arrival for the download-complete chime. */
+  function shelfSignature(items) {
+    var sig = {};
+    (items || []).forEach(function (it) {
+      if (it.episodes) {
+        sig[itemKey(it)] = true;
+        it.episodes.forEach(function (ep) { sig['ep:' + (ep.file || ep.name || '')] = true; });
+      } else {
+        sig[itemKey(it)] = true;
+      }
+    });
+    return sig;
+  }
+
   async function refreshDownloads() {
     if (document.hidden) return;
     var data = await apiSilent('/api/downloads');
@@ -1049,6 +1235,16 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     }
     hideDiag();
     setOnline(true);
+    if (shelfLoaded) {
+      var oldSig = shelfSignature(shelfItems);
+      var newSig = shelfSignature(norm.items);
+      var added = Object.keys(newSig).some(function (k) { return !oldSig[k]; });
+      if (added) {
+        /* never over film audio: hold the chime while the player is open */
+        if (playerOpen()) pendingChime = true;
+        else sfxChime();
+      }
+    }
     shelfItems = norm.items;
     shelfLoaded = true;
     renderShelf(norm.items, norm.disk);
@@ -1185,6 +1381,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       var wasRunning = batchState.running;
       setLock(false);
       if (wasRunning) { toast('Batch finished'); refreshDownloads(); }
+      if (wasRunning && msg && msg.indexOf('Could not') === 0) sfxThunk();
       if (card && msg) {
         var stEl = $('.batch-status', card);
         if (stEl) stEl.textContent = msg;
@@ -1349,6 +1546,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     player.video.load();
     player.overlay.hidden = false;
     player.video.play().catch(function () {});
+    sfxSweep();
   }
   function closePlayer() {
     hideNextBar();
@@ -1360,6 +1558,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     }
     if (player.overlay) player.overlay.hidden = true;
     player.current = null;
+    if (pendingChime) { pendingChime = false; sfxChime(); }
   }
 
   /* file + series context for a Play click, from API data when present,
@@ -1640,6 +1839,8 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     injectCss();
     loadAccent();
     wireAccent();
+    wireSound();
+    wireClickSounds();
     wireShutdown();
     wireKeyBar();
     wireChrome();
