@@ -33,9 +33,9 @@ header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; back
 
 .brand { position: relative; display: flex; align-items: center; }
 
-.logo-btn { display: flex; align-items: center; gap: 10px; background: none; border: 0px; padding: 0px; cursor: pointer; font: inherit; }
+.logo-btn { display: flex; align-items: center; gap: 10px; background: none; border: 0px; padding: 0px; cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
 
-.logo-btn:focus-visible { outline: rgb(255, 255, 255) solid 2px; outline-offset: 3px; border-radius: 10px; }
+.logo-btn:focus-visible { outline: none; }
 
 .logo-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-size: 15px; padding-left: 3px; flex: 0 0 auto; box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 8px; }
 
@@ -258,13 +258,13 @@ kbd { background: rgb(32, 32, 44); border-top-color: ; border-top-style: ; borde
 
 .key-bar { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--bg2); }
 
-.key-btn { flex: 1 1 0%; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-language-override: normal; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 600; font-stretch: normal; font-size: 13px; line-height: 1.4; font-family: system-ui, sans-serif; cursor: pointer; }
+.key-btn { flex: 1 1 0%; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-language-override: normal; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 600; font-stretch: normal; font-size: 13px; line-height: 1.4; font-family: system-ui, sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
 
 .key-btn:active { transform: scale(0.96); }
 
 .key-back { flex: 2 1 0%; background: var(--accent); border-color: var(--accent); color: rgb(255, 255, 255); }
 
-.key-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.key-btn:focus-visible { outline: none; }
 
 .poster-ph.initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: rgb(255, 255, 255); }
 
@@ -482,13 +482,14 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
 
 
 
+<style>/* edge-to-edge terminal, 16 Nov 2026: fill the phone width */@media (max-width: 900px){main{padding:0}.term-wrap{border:0;border-radius:0}}</style>
 </head>
 <body>
 <header>
   <div class="brand"><button class="logo-btn" id="accentDot" title="Accent colour" aria-label="Accent colour"><span class="logo-mark">▶</span><span class="logo-word">MovieBox</span></button></div>
   <div class="pill offline" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
   <div class="head-right">
-    <button id="shutdownBtn" type="button">Shut down</button><div class="accent-pop" id="accentPop"><button data-accent="#e50914" style="background:#e50914" title="Red" aria-label="Red"></button><button data-accent="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button><button data-accent="#16a34a" style="background:#16a34a" title="Green" aria-label="Green"></button><button data-accent="#9333ea" style="background:#9333ea" title="Purple" aria-label="Purple" class="sel"></button><button data-accent="#ea580c" style="background:#ea580c" title="Orange" aria-label="Orange"></button></div>
+    <button id="shutdownBtn" type="button">Shut down</button><div class="accent-pop" id="accentPop"><button data-accent="#e50914" style="background:#e50914" title="Red" aria-label="Red"></button><button data-accent="#2563eb" style="background:#2563eb" title="Blue" aria-label="Blue"></button><button data-accent="#16a34a" style="background:#16a34a" title="Green" aria-label="Green"></button><button data-accent="#9333ea" style="background:#9333ea" title="Purple" aria-label="Purple" class="sel"></button><button data-accent="#ea580c" style="background:#ea580c" title="Orange" aria-label="Orange"></button><button id="soundBtn" type="button" aria-label="Toggle sound" title="Sound on">🔊</button></div>
   </div>
 </header>
 <main>
@@ -576,6 +577,8 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
   function isAndroid() { return /Android/i.test(navigator.userAgent); }
 
   function toast(msg, ms) {
+    /* every error toast in this file starts with "Could not" — low thunk */
+    if (typeof msg === 'string' && msg.indexOf('Could not') === 0) sfxThunk();
     var box = document.getElementById('toasts');
     if (!box) return;
     var el = document.createElement('div');
@@ -597,6 +600,126 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     } finally { clearTimeout(t); }
   }
   async function apiSilent(path, opts) { try { return await api(path, opts); } catch (e) { return null; } }
+
+  /* ---------------- sound effects (Web Audio, synthesized — no files) ---------------- */
+  /* Four QUIET, clearly different UI sounds, all soft sine tones.
+     No noise bursts, no sawtooth — those sounded weird and loud.
+     Master gain is low (0.3) and every voice is a gentle sine, so
+     nothing startles. Each sound has its own pitch and character:
+       click  = one very short high tick
+       chime  = a gentle two-note melody (download done)
+       play   = a soft rising tone (film starting)
+       error  = a soft low bloop
+     They fire ONLY on UI events, never during film playback: the
+     download-complete chime is held back while the player overlay is
+     open and plays when the player closes instead. */
+  var audioCtx = null;
+  var masterGain = null;
+  var soundMuted = false;
+  var pendingChime = false;
+
+  function audioContext() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { audioCtx = new AC(); } catch (e) { return null; }
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.3;
+      masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') {
+      try { var p = audioCtx.resume(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    }
+    return audioCtx;
+  }
+  function loadSoundPref() {
+    try { soundMuted = localStorage.getItem('mb_sound') === 'off'; } catch (e) { soundMuted = false; }
+  }
+  function saveSoundPref() {
+    try { localStorage.setItem('mb_sound', soundMuted ? 'off' : 'on'); } catch (e) {}
+  }
+  function playerOpen() {
+    return !!(typeof player !== 'undefined' && player && player.overlay && !player.overlay.hidden);
+  }
+  /* one soft sine voice: optional pitch glide + gentle gain envelope.
+     peak is the voice level into the master gain (0.3), so the
+     effective loudness stays low (about a third of the old sounds). */
+  function tone(opts) {
+    var ctx = audioContext();
+    if (!ctx || !masterGain) return;
+    var t0 = ctx.currentTime + (opts.delay || 0);
+    var dur = opts.dur || 0.2;
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(opts.from, t0);
+    if (opts.to && opts.to !== opts.from) o.frequency.exponentialRampToValueAtTime(Math.max(opts.to, 1), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(opts.peak || 0.10, t0 + (opts.attack || 0.008));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g);
+    g.connect(masterGain);
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  }
+  /* 1 — very short, soft, high tick: one sine blip, ~1400 Hz, ~35 ms */
+  function sfxClick() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 1400, dur: 0.035, peak: 0.10, attack: 0.004 });
+  }
+  /* 2 — gentle, warm two-note chime: E5 then G5, soft sines */
+  function sfxChime() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 659.25, dur: 0.55, peak: 0.12, attack: 0.02 });
+    tone({ from: 783.99, dur: 0.7, peak: 0.12, attack: 0.02, delay: 0.16 });
+  }
+  /* 3 — soft, smooth rising sine tone when a film starts playing */
+  function sfxSweep() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 392, to: 784, dur: 0.45, peak: 0.12, attack: 0.06 });
+  }
+  /* 4 — soft, low, short bloop for errors: low sine, quiet */
+  function sfxThunk() {
+    if (soundMuted) return;
+    if (!audioContext()) return;
+    tone({ from: 180, to: 110, dur: 0.18, peak: 0.15, attack: 0.006 });
+  }
+  function updateSoundBtn() {
+    var b = document.getElementById('soundBtn');
+    if (!b) return;
+    b.textContent = soundMuted ? '🔇' : '🔊';
+    b.title = soundMuted ? 'Sound off — tap to unmute' : 'Sound on — tap to mute';
+    b.classList.toggle('muted', soundMuted);
+  }
+  function wireSound() {
+    loadSoundPref();
+    updateSoundBtn();
+    var b = document.getElementById('soundBtn');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      soundMuted = !soundMuted;
+      saveSoundPref();
+      updateSoundBtn();
+      if (!soundMuted) { audioContext(); sfxClick(); }
+    });
+  }
+  /* click sound for every page button (capture phase, so it fires even
+     when a handler stops propagation); the mute toggle is excluded —
+     it plays its own confirmation click only when unmuting. */
+  function wireClickSounds() {
+    document.addEventListener('click', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+      if (!b || b.id === 'soundBtn' || b.disabled) return;
+      sfxClick();
+    }, true);
+    /* browsers block audio until a user gesture: warm up the context */
+    ['pointerdown', 'keydown'].forEach(function (evt) {
+      document.addEventListener(evt, function () { audioContext(); }, { passive: true });
+    });
+  }
 
   /* ---------------- state ---------------- */
   var shelfItems = [];          // last good /api/downloads items
@@ -622,7 +745,9 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       '.copy-box p{color:var(--muted);font-size:13px;margin:0 0 10px}' +
       '.copy-box input{width:100%;background:#0f0f16;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px}' +
       '.copy-box .copy-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}' +
-      '.copy-box .copy-actions .hbtn{padding:11px 14px;text-align:center;display:block}';
+      '.copy-box .copy-actions .hbtn{padding:11px 14px;text-align:center;display:block}' +
+      '#soundBtn.muted{opacity:.55}' +
+      '#accentPop #soundBtn{background:#20202c;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}';
     document.head.appendChild(st);
   }
 
@@ -642,7 +767,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     root.style.setProperty('--accent', hex);
     root.style.setProperty('--accent-soft', ACCENTS[hex]);
     try { localStorage.setItem('mb_accent', hex); } catch (e) {}
-    $$('#accentPop button').forEach(function (b) {
+    $$('#accentPop button[data-accent]').forEach(function (b) {
       b.classList.toggle('sel', b.getAttribute('data-accent') === hex);
     });
   }
@@ -659,7 +784,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       ev.stopPropagation();
       pop.classList.toggle('open');
     });
-    $$('#accentPop button').forEach(function (b) {
+    $$('#accentPop button[data-accent]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
         ev.stopPropagation();
         applyAccent(b.getAttribute('data-accent'));
@@ -1038,6 +1163,22 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     });
   }
 
+  /* signature of the shelf contents: film keys + every episode file, so
+     a newly finished film OR a new episode inside an existing series
+     counts as a new arrival for the download-complete chime. */
+  function shelfSignature(items) {
+    var sig = {};
+    (items || []).forEach(function (it) {
+      if (it.episodes) {
+        sig[itemKey(it)] = true;
+        it.episodes.forEach(function (ep) { sig['ep:' + (ep.file || ep.name || '')] = true; });
+      } else {
+        sig[itemKey(it)] = true;
+      }
+    });
+    return sig;
+  }
+
   async function refreshDownloads() {
     if (document.hidden) return;
     var data = await apiSilent('/api/downloads');
@@ -1049,6 +1190,16 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     }
     hideDiag();
     setOnline(true);
+    if (shelfLoaded) {
+      var oldSig = shelfSignature(shelfItems);
+      var newSig = shelfSignature(norm.items);
+      var added = Object.keys(newSig).some(function (k) { return !oldSig[k]; });
+      if (added) {
+        /* never over film audio: hold the chime while the player is open */
+        if (playerOpen()) pendingChime = true;
+        else sfxChime();
+      }
+    }
     shelfItems = norm.items;
     shelfLoaded = true;
     renderShelf(norm.items, norm.disk);
@@ -1185,6 +1336,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
       var wasRunning = batchState.running;
       setLock(false);
       if (wasRunning) { toast('Batch finished'); refreshDownloads(); }
+      if (wasRunning && msg && msg.indexOf('Could not') === 0) sfxThunk();
       if (card && msg) {
         var stEl = $('.batch-status', card);
         if (stEl) stEl.textContent = msg;
@@ -1349,6 +1501,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     player.video.load();
     player.overlay.hidden = false;
     player.video.play().catch(function () {});
+    sfxSweep();
   }
   function closePlayer() {
     hideNextBar();
@@ -1360,6 +1513,7 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     }
     if (player.overlay) player.overlay.hidden = true;
     player.current = null;
+    if (pendingChime) { pendingChime = false; sfxChime(); }
   }
 
   /* file + series context for a Play click, from API data when present,
@@ -1640,6 +1794,8 @@ body { padding-bottom: env(safe-area-inset-bottom,0px); }
     injectCss();
     loadAccent();
     wireAccent();
+    wireSound();
+    wireClickSounds();
     wireShutdown();
     wireKeyBar();
     wireChrome();

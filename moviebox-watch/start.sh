@@ -33,7 +33,7 @@ bash "$WATCH_DIR/run-app.sh"
 #    and the App tunnel. Must run after run-app.sh (the session must
 #    exist first). Idempotent: skipped if already running.
 if ! pgrep -f "ttyd -p 7681" >/dev/null 2>&1; then
-    nohup ttyd -p 7681 tmux attach-session -t moviebox >>"$WATCH_DIR/ttyd.log" 2>&1 &
+    nohup ttyd -p 7681 -W -t fontSize=12 tmux attach-session -t moviebox >>"$WATCH_DIR/ttyd.log" 2>&1 &
     echo "ttyd started (pid $!)"
 else
     echo "ttyd already running"
